@@ -50,12 +50,6 @@ app.use(multer({ storage: fileStorage, fileFilter: fileFilter }).single('image')
 
 
 
-
-//routes
-app.use('/feed', feedRoutes);
-app.use('/auth', authRoutes);
-
-
 //ERROR HANDLER
 app.use((err, req, res, next) => {
 	console.log(err);
@@ -70,17 +64,12 @@ app.use((err, req, res, next) => {
 
 mongoose
 .connect(
+	'mongodb+srv://mohdimran:g1bpwOQ4PFS3unlF@cluster0-gudn3.mongodb.net/graphql?retryWrites=true&w=majority'
 ).then(result => {
 	//server
-	const server = app.listen(8080, () => {
+	app.listen(8080, () => {
     	console.log("server started");
 	});
-
-	const io = require('./socket').init(server);
-
-	io.on('connection', (socket) => {
-		console.log("client connected");
-	})
 })
 
 
