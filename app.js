@@ -5,11 +5,10 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const multer = require('multer');
+const graphqlHttp = require('express-graphql');
 
-//custom modules
-const feedRoutes = require('./routes/feed');
-const authRoutes = require('./routes/auth');
-
+const graphqlSchema = require('./graphql/schema');
+const graphqlResolvers = require('./graphql/resolvers');
 
 //initializing express app
 const app = express();
@@ -35,18 +34,35 @@ const fileFilter = (req, file, cb) => {
 }
 
 
-
 //middlewares
 app.use((req, res, next) => {
    res.setHeader('Access-Control-Allow-Origin', '*');
    res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST, PUT, PATCH, DELETE');
    res.setHeader('Access-Control-Allow-Headers', 'Accept, Content-Type, Authorization');
+   if(req.method === 'OPTIONS')
+   		return res.sendStatus(200);
    next();
 });
 
 app.use(bodyParser.json());
 app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use(multer({ storage: fileStorage, fileFilter: fileFilter }).single('image'));
+
+
+app.use('/graphql', graphqlHttp({
+	schema: graphqlSchema,
+	rootValue: graphqlResolvers,
+	graphiql: true,
+	customFormatErrorFn (err) {
+		if(!err.originalError)
+			return err;
+
+		const message = err.message || 'An Error Occured';
+		const code = err.originalError.statusCode || 500;
+		const data = err.originalError.data;
+		return { message: message, statusCode: code, data: data };
+	}
+}));
 
 
 
@@ -64,8 +80,9 @@ app.use((err, req, res, next) => {
 
 mongoose
 .connect(
-	'mongodb+srv://mohdimran:g1bpwOQ4PFS3unlF@cluster0-gudn3.mongodb.net/graphql?retryWrites=true&w=majority'
-).then(result => {
+, 
+{ useNewUrlParser: true, useUnifiedTopology: true })
+.then(result => {
 	//server
 	app.listen(8080, () => {
     	console.log("server started");
