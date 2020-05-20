@@ -1,15 +1,16 @@
 const jwt = require('jsonwebtoken');
 
-function errorHandler(message, statusCode) {
-	const error = new Error(message);
-	error.statusCode = statusCode;
-	throw error;
-}
+// function errorHandler(message, statusCode) {
+// 	const error = new Error(message);
+// 	error.statusCode = statusCode;
+// 	throw error;
+// }
 
 module.exports = (req, res, next) => {
 	const authHeader = req.get('Authorization');
 	if(!authHeader) {
-		return errorHandler('Not Authorized', 401);
+		req.isAuth = false;
+		return next();
 	}
 	
 	const token = authHeader.split(' ')[1];
@@ -18,13 +19,16 @@ module.exports = (req, res, next) => {
 	try {
 		decodedToken = jwt.verify(token, 'mysupersecretsecret');
 	} catch {
-		return errorHandler('failed to verify user', 401);
+		req.isAuth = false;
+		return next();	
 	}
 
 	if(!decodedToken) {
-		return errorHandler('Not Authorized', 401);
+		req.isAuth = false;
+		return next();
 	}
 
 	req.userId = decodedToken.userId;
+	req.isAuth = true;
 	next();
 }

@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 
 //third-party dependencies
 const express = require('express');
@@ -9,6 +10,7 @@ const graphqlHttp = require('express-graphql');
 
 const graphqlSchema = require('./graphql/schema');
 const graphqlResolvers = require('./graphql/resolvers');
+const auth = require('./middlewares/auth');
 
 //initializing express app
 const app = express();
@@ -48,6 +50,17 @@ app.use(bodyParser.json());
 app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use(multer({ storage: fileStorage, fileFilter: fileFilter }).single('image'));
 
+app.use(auth);
+
+app.put('/post-image', (req, res, next) => {
+	if(!req.file) {
+		return res.status(200).json({ message: "No file provided!" });
+	}
+	if(req.body.oldPath) {
+		clearImage(req.body.oldPath);
+	}
+	return res.status(200).json({ message: "File Stored", filePath: req.file.path });
+});
 
 app.use('/graphql', graphqlHttp({
 	schema: graphqlSchema,
@@ -89,7 +102,10 @@ mongoose
 	});
 })
 
-
+const clearImage = filePath => {
+	filePath = path.join(__dirname, filePath);
+	fs.unlink(filePath, err => console.log(err));
+};
 
 
 
